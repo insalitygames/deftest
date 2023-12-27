@@ -127,4 +127,19 @@ function mock.unmock(module)
 	end
 end
 
+---@class mock_function: function
+---@field calls number
+---@field answers table
+---@field repl_fn function
+---@field params table
+
+---@return mock_function(...)
+function mock.get_function()
+	local a = {}
+	a.f = function(...) end
+	mock.mock(a)
+	return a.f
+end
+
+
 return mock

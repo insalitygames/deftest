@@ -3,6 +3,7 @@ local mock = require "deftest.mock.mock"
 local M = {}
 
 local instance_count = 0
+local index = 0
 
 local nodes = {}
 
@@ -10,9 +11,12 @@ local function ensure_hash(id)
 	return type(id) == "string" and hash(id) or id
 end
 
+
+---@return node
 local function new_node(id, node_type, x, y, z, w, h)
 	id = ensure_hash(id)
 	assert(not nodes[id])
+	---@type node
 	local node = {
 		id = id,
 		type = node_type,
@@ -20,12 +24,14 @@ local function new_node(id, node_type, x, y, z, w, h)
 		position = vmath.vector3(x, y, z),
 		size = vmath.vector3(w or 1, h or 1, 0),
 		scale = vmath.vector3(1, 1, 1),
-		rotation = vmath.quat(),
+		rotation = vmath.vector3(0, 0, 0),
 		color = vmath.vector4(1, 1, 1, 1),
 		enabled = true,
 		parent = nil,
+		index = index,
 		animations = {},
 	}
+	index = index + 1
 	nodes[id] = node
 	return node
 end
@@ -61,6 +67,11 @@ local function screen_position(node, position)
 	end
 	return position
 end
+
+local function get_index(node)
+	return node.index
+end
+
 
 local function is_enabled(node)
 	return node.enabled
@@ -129,12 +140,28 @@ local function get_color(node)
 	return node.color
 end
 
+local function set_pivot(node, pivot)
+	node.pivot = pivot
+end
+
+local function get_pivot(node)
+	return node.pivot
+end
+
 local function get_position(node)
 	return vmath.vector3(node.position)
 end
 
 local function set_position(node, position)
 	node.position = vmath.vector3(position)
+end
+
+local function get_rotation(node)
+	return vmath.vector3(node.rotation)
+end
+
+local function set_rotation(node, rotation)
+	node.rotation = vmath.vector3(rotation)
 end
 
 local function delete_node(node)
@@ -214,6 +241,7 @@ local function cancel_animation(node, property)
 	end
 end
 
+
 function M.mock()
 	mock.mock(gui)
 	gui.get_node.replace(get_node)
@@ -245,29 +273,41 @@ function M.mock()
 	gui.get_position.replace(get_position)
 	gui.set_position.replace(set_position)
 
+	gui.get_rotation.replace(get_rotation)
+	gui.set_rotation.replace(set_rotation)
+
 	gui.set_size.replace(set_size)
 	gui.get_size.replace(get_size)
 
 	gui.set_scale.replace(set_scale)
 	gui.get_scale.replace(get_scale)
 
+	gui.set_pivot.replace(set_pivot)
+	gui.get_pivot.replace(get_pivot)
+
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
 
 	gui.clone.replace(clone)
 
+	gui.get_index.replace(get_index)
+
 	gui.animate.replace(animate)
 	gui.cancel_animation.replace(cancel_animation)
 end
+
 
 function M.unmock()
 	mock.unmock(gui)
 	nodes = {}
 end
 
+
+---@return node
 function M.add_box(id, x, y, w, h)
 	return new_node(id, "box", x, y, 0, w, h)
 end
+
 
 function M.add_text(id, x, y, w, h)
 	local node = new_node(id, "text", x, y, 0, w, h)
@@ -275,5 +315,6 @@ function M.add_text(id, x, y, w, h)
 	node.font = hash("font")
 	return node
 end
+
 
 return M
